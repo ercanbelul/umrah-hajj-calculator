@@ -6,7 +6,6 @@
     <title>Umre Hesaplama SÜPER PRO - by Ercan</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* Orijinal CSS kodlarınız burada... */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 10px; -webkit-user-select: none; user-select: none; direction: ltr; }
         #app { max-width: 1000px; margin: 20px auto; background: white; border-radius: 15px; padding: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.4); position: relative; }
@@ -54,7 +53,7 @@
                 <div class="form-group"><label>Uçak Bileti (USD):</label><input type="number" id="flightCost" oninput="calculateAll()"></div>
             </div>
         </div>
-
+        
         <div class="section">
             <h3>🚌 OTOBÜS MALİYETİ (Toplam / SAR)</h3>
             <div class="form-group"><label>Toplam Otobüs Tutarı:</label><input type="number" id="busTotalCost" oninput="calculateAll()"></div>
@@ -103,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchLiveRates();
 });
 
-// === YARDIMCI FONKSİYON ===
 const getValue = (id, isInt = false) => {
     const el = document.getElementById(id);
     if (!el) return 0;
@@ -112,7 +110,6 @@ const getValue = (id, isInt = false) => {
     return isNaN(number) ? 0 : number;
 };
 
-// === API İŞLEMİ ===
 async function fetchLiveRates() {
     // ---------------------------------------------------------------
     // !!! KENDİ YENİ VE GİZLİ API ANAHTARINIZI BURAYA GİRİN !!!
@@ -139,7 +136,6 @@ async function fetchLiveRates() {
     }
 }
 
-// === OTEL GECE HESAPLAMA ===
 function calculateHotelCosts() {
     ['makkah', 'madinah'].forEach(city => {
         const checkIn = document.getElementById(`${city}CheckIn`).value;
@@ -151,11 +147,9 @@ function calculateHotelCosts() {
         }
         document.getElementById(`${city}Nights`).value = nights;
     });
-    calculateAll(); // Gece sayısı değişince ana hesaplamayı tetikle
+    calculateAll();
 }
 
-
-// === ANA HESAPLAMA MOTORU ===
 function calculateAll() {
     const paxCount = getValue('paxCount', true);
     if (paxCount === 0) {
@@ -163,7 +157,6 @@ function calculateAll() {
         return;
     }
 
-    // Değerleri Topla
     const visaCostUSD = getValue('visaCost');
     const flightCostUSD = getValue('flightCost');
     const busTotalCostSAR = getValue('busTotalCost');
@@ -172,7 +165,6 @@ function calculateAll() {
 
     if (exchangeRate === 0) return;
 
-    // Otel Maliyetlerini Hesapla
     let totalHotelCostSAR = 0;
     ['makkah', 'madinah'].forEach(city => {
         const nights = getValue(`${city}Nights`, true);
@@ -181,7 +173,6 @@ function calculateAll() {
         totalHotelCostSAR += getValue(`${city}QrdCount`) * getValue(`${city}QrdPrice`) * nights;
     });
 
-    // Kişi Başı Maliyetleri SAR Cinsinden Hesapla
     const baseCostPerPersonUSD = visaCostUSD + flightCostUSD;
     const baseCostPerPersonSAR = baseCostPerPersonUSD * exchangeRate;
     const busCostPerPersonSAR = busTotalCostSAR / paxCount;
@@ -189,11 +180,9 @@ function calculateAll() {
     
     const totalCostPerPersonSAR_beforeProfit = baseCostPerPersonSAR + busCostPerPersonSAR + hotelCostPerPersonSAR;
     
-    // Kâr Ekle
     const profitAmountSAR = totalCostPerPersonSAR_beforeProfit * (profitPercentage / 100);
     const finalPricePerPersonSAR = totalCostPerPersonSAR_beforeProfit + profitAmountSAR;
 
-    // Sonuçları Global Sakla ve Görüntüle
     window.lastCalculation = {
         paxCount,
         exchangeRate,
@@ -223,8 +212,6 @@ function displayResults(data) {
     document.getElementById('result').style.display = 'block';
 }
 
-
-// === Dosya İşlemleri ===
 function saveCalculation() {
     const data = {};
     document.querySelectorAll('input').forEach(el => {
@@ -248,7 +235,7 @@ function handleFileLoad(event) {
             const el = document.getElementById(id);
             if (el) el.value = data[id];
         }
-        calculateHotelCosts(); // Otel gecelerini ve ana hesaplamayı tetikler
+        calculateHotelCosts();
     };
     reader.readAsText(file);
 }
@@ -259,8 +246,10 @@ function exportToExcel() {
         return;
     }
     const data = window.lastCalculation;
+    const customerName = document.getElementById('customerName').value || "Bilinmeyen Müşteri";
+    
     const ws_data = [
-        ["Müşteri", document.getElementById('customerName').value || "Bilinmeyen"],
+        ["Müşteri", customerName],
         ["Yolcu Sayısı", data.paxCount],
         [],
         ["KALEM", "KİŞİ BAŞI (SAR)", "TOPLAM GRUP (SAR)"],
@@ -276,7 +265,7 @@ function exportToExcel() {
     const ws = XLSX.utils.aoa_to_sheet(ws_data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Maliyet Raporu");
-    XLSX.writeFile(wb, "Maliyet_Raporu.xlsx");
+    XLSX.writeFile(wb, `${customerName.replace(/ /g, '_')}_rapor.xlsx`);
 }
 
 </script>
